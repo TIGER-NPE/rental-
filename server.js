@@ -513,10 +513,7 @@ app.get('/api/setup', async (req, res) => {
   }
 });
 
-// Serve the main page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
+// API is ready - frontend is on Netlify
 
 // Start server
 app.listen(PORT);
