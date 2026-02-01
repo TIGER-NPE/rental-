@@ -428,6 +428,91 @@ app.delete('/api/admin/terms/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
+// ============================================
+// DATABASE SETUP ROUTE - Run once to create tables
+// Visit: https://your-api.onrender.com/api/setup
+// ============================================
+
+app.get('/api/setup', async (req, res) => {
+  try {
+    // Create cars table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cars (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        model VARCHAR(100) NOT NULL,
+        year INTEGER NOT NULL,
+        price_per_day DECIMAL(10, 2) NOT NULL,
+        whatsapp_number VARCHAR(20) NOT NULL,
+        images JSONB,
+        description TEXT,
+        location VARCHAR(100),
+        seats INTEGER DEFAULT 5,
+        doors INTEGER DEFAULT 4,
+        transmission VARCHAR(50) DEFAULT 'Automatic',
+        available BOOLEAN DEFAULT TRUE,
+        start_date DATE,
+        end_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create drivers table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS drivers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        email VARCHAR(100),
+        license_number VARCHAR(50),
+        vehicle_assigned VARCHAR(100),
+        photo_url TEXT,
+        status VARCHAR(20) DEFAULT 'available',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create terms table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS terms (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert default terms
+    await pool.query(`
+      INSERT INTO terms (title, content, display_order) VALUES
+      ('1. Eligibility', 'Renters must be 18 years or older.', 1),
+      ('2. Booking', 'All bookings must be made through our website.', 2),
+      ('3. Payment', 'Payment can be made via approved methods.', 3),
+      ('4. Vehicle Use', 'Vehicles must be used legally.', 4),
+      ('5. Fuel Policy', 'Vehicles are provided with a full tank.', 5),
+      ('6. Rental Duration', 'The rental period starts at pickup.', 6),
+      ('7. Insurance', 'Renters are responsible for minor damages.', 7),
+      ('8. Contact Rules', 'Communication for booking via WhatsApp.', 8),
+      ('9. Termination', 'Rental may be terminated if rules violated.', 9),
+      ('10. General', 'We reserve the right to update these rules.', 10)
+      ON CONFLICT DO NOTHING
+    `);
+
+    res.json({ 
+      success: true, 
+      message: 'Database setup complete! Tables created: cars, drivers, terms' 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // Serve the main page
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));

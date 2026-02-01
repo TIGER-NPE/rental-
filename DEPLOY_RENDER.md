@@ -1,144 +1,188 @@
 # Deploy to Render.com - Step by Step
 
-## IMPORTANT: Free Tier Settings
+## OPTION 2: Use Your Backend to Create Tables (EASIEST!)
 
-When creating PostgreSQL on Render:
+This method uses your own API to create database tables. No extra tools needed!
 
-| Setting | Value for FREE |
-|---------|----------------|
-| **Instance type** | **Free** (select this!) |
-| **Storage** | **1 GB** (minimum, to stay free) |
-| **High Availability** | Disabled |
-| **Storage Autoscaling** | Disabled |
+---
 
-## Step 1: Push to GitHub
+### Step 1: Add the Setup Route to server.js
 
-```bash
-git init
-git add .
-git commit -m "Ready for Render"
-# Create repository on GitHub.com
-git remote add origin https://github.com/YOUR_USERNAME/car-rental.git
-git push -u origin main
+Open [`server.js`](server.js) and add this route **BEFORE** the line `// Start server`:
+
+```javascript
+// ============================================
+// DATABASE SETUP ROUTE - Run once to create tables
+// ============================================
+
+app.get('/api/setup', async (req, res) => {
+  try {
+    // Create cars table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cars (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        model VARCHAR(100) NOT NULL,
+        year INTEGER NOT NULL,
+        price_per_day DECIMAL(10, 2) NOT NULL,
+        whatsapp_number VARCHAR(20) NOT NULL,
+        images JSONB,
+        description TEXT,
+        location VARCHAR(100),
+        seats INTEGER DEFAULT 5,
+        doors INTEGER DEFAULT 4,
+        transmission VARCHAR(50) DEFAULT 'Automatic',
+        available BOOLEAN DEFAULT TRUE,
+        start_date DATE,
+        end_date DATE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create drivers table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS drivers (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        phone VARCHAR(20) NOT NULL,
+        email VARCHAR(100),
+        license_number VARCHAR(50),
+        vehicle_assigned VARCHAR(100),
+        photo_url TEXT,
+        status VARCHAR(20) DEFAULT 'available',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create terms table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS terms (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(200) NOT NULL,
+        content TEXT NOT NULL,
+        display_order INTEGER DEFAULT 0,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert default terms (only if not already exists)
+    await pool.query(`
+      INSERT INTO terms (title, content, display_order) VALUES
+      ('1. Eligibility', 'Renters must be 18 years or older.\nA valid driver''s license is required.\nProof of identity and contact information must be provided.', 1),
+      ('2. Booking and Reservation', 'All bookings must be made through our website or approved contact methods.\nReservations are confirmed only after payment or admin approval.\nCancellations must be notified at least 24 hours in advance.', 2),
+      ('3. Payment', 'Payment can be made via approved methods (e.g., cash, mobile money, or bank transfer).\nNo vehicle will be released without full payment.\nAdditional charges may apply for late return or extra services.', 3),
+      ('4. Vehicle Use', 'Vehicles must be used legally and responsibly.\nNo smoking, alcohol, or illegal substances in the vehicle.\nRenters are responsible for any damage caused during rental.\nVehicles must be returned in the same condition as received.', 4),
+      ('5. Fuel Policy', 'Vehicles are provided with a full tank.\nRenters must refuel before returning; otherwise, refueling charges apply.', 5),
+      ('6. Rental Duration and Late Returns', 'The rental period starts at the agreed pickup time.\nLate returns are subject to extra charges per hour/day.\nEarly returns will not affect the paid rental fee unless otherwise agreed.', 6),
+      ('7. Insurance & Liability', 'Renters are responsible for minor damages and fines.\nMajor accidents must be reported immediately.\nInsurance coverage details will be provided at pickup.', 7),
+      ('8. WhatsApp / Contact Rules', 'Communication for booking is done via WhatsApp or official contact numbers.\nDo not share the vehicle or booking details with third parties.\nAll inquiries must be polite and professional.', 8),
+      ('9. Termination of Rental', 'Rental may be terminated immediately if rules are violated.\nNo refunds for early termination caused by renter misconduct.', 9),
+      ('10. General', 'We reserve the right to update these rules at any time.\nBy renting a vehicle, you agree to follow all terms and policies.\nQuestions or concerns can be addressed via official contact channels.', 10)
+      ON CONFLICT DO NOTHING
+    `);
+
+    res.json({ 
+      success: true, 
+      message: 'Database setup complete! Tables created: cars, drivers, terms' 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 ```
 
-## Step 2: Create PostgreSQL Database on Render
+---
 
-1. Go to https://dashboard.render.com
-2. Click **"New"** → **"PostgreSQL"**
-3. Fill in:
-   - **Name**: `car_rental`
-   - **Project**: `rental` (select your project)
-   - **Region**: Oregon (US West)
-   - **PostgreSQL Version**: 18
-4. **IMPORTANT - Free Tier**:
-   - **Instance type**: Select **Free**
-   - **Storage**: Set to **1 GB** (minimum)
-5. Click **"Create Database"**
-6. Wait for it to finish creating (status: Available - green checkmark)
+### Step 2: Save the File
 
-### WHERE TO FIND THE INTERNAL DATABASE URL:
+---
 
-After database is created, you will see a page with:
+### Step 3: Push to GitHub
 
-1. **Click on the database name** in the left sidebar (e.g., "car_rental")
-2. Look for **"Connection"** section in the middle of the page
-3. You will see:
-   ```
-   Internal Database URL: postgres://user:password@host:5432/car_rental
-   ```
-4. **Click the copy button** (or highlight and copy the URL)
+```bash
+git add server.js
+git commit -m "Add database setup route"
+git push origin master
+```
 
-## Step 3: Deploy Backend on Render
+---
 
-1. Go to https://dashboard.render.com
-2. Click **"New"** → **"Web Service"**
-3. Connect your GitHub repository
-4. Configure:
-   - **Name**: `car-rental-api`
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-5. Click **"Create Web Service"**
+### Step 4: Wait for Render to Redeploy
 
-## Step 4: Add Environment Variables
+- Go to your web service on Render
+- Check the "Deployments" tab
+- Wait for the new deployment to finish (status: Live)
 
-1. In your web service dashboard, click **"Environment"** tab (left sidebar)
-2. Scroll down to **"Environment Variables"**
-3. Click **"Add"** and add:
-   - **Key**: `DATABASE_URL`
-   - **Value**: `postgres://user:password@host:5432/car_rental` (paste the URL you copied)
-4. Click **"Add"** again:
-   - **Key**: `ADMIN_PASSWORD`
-   - **Value**: `admin123`
-5. Click **"Save Changes"**
-6. Your service will automatically restart
+---
 
-## Step 5: Set Up Database Tables
+### Step 5: Run the Setup
 
-1. Go back to your PostgreSQL database dashboard
-2. Click **"PSQL"** button (near the top)
-3. A console will open
-4. Copy ALL content from `config/schema.sql` file
-5. Paste into the PSQL console
-6. Press **Enter** to execute
-7. You should see `INSERT 0 10` and `CREATE TABLE` messages
+1. Open your browser
+2. Visit: `https://your-render-service.onrender.com/api/setup`
+   - Replace `your-render-service` with your actual web service name
 
-## Step 6: Deploy Frontend on Netlify (Free)
+**Expected Result:**
+```json
+{
+  "success": true,
+  "message": "Database setup complete! Tables created: cars, drivers, terms"
+}
+```
 
-1. Build the frontend:
-   ```bash
-   npm run build
-   ```
+---
 
-2. Go to https://netlify.com
-3. Drag the `dist` folder to the Netlify page
+### Step 6: Verify Tables Were Created
 
-4. **IMPORTANT**: Update API URL:
-   - Edit `src/pages/CarsPage.jsx`:
-   ```javascript
-   const API_BASE = 'https://your-render-service.onrender.com'
-   ```
-   - Rebuild: `npm run build`
-   - Redploy to Netlify
+Visit each URL:
 
-## Testing Your Deployment
+| URL | Expected Result |
+|-----|-----------------|
+| `https://your-api.onrender.com/api/cars` | `{"success":true,"data":[]}` |
+| `https://your-api.onrender.com/api/drivers/available` | `{"success":true,"data":[]}` |
+| `https://your-api.onrender.com/api/terms` | `{"success":true,"data":[...]}` |
 
-1. API: `https://your-render-service.onrender.com/api/cars`
-   - Should return JSON with cars (empty if none added yet)
+If you see data in the terms response (10 items), your database is set up correctly!
 
-2. Frontend: `https://your-netlify-site.netlify.app`
-   - Should show the homepage
+---
 
-3. Admin: `https://your-netlify-site.netlify.app/admin.html`
-   - Password: `admin123`
+### Step 7: (Optional) Remove the Setup Route
 
-## Adding Your First Car
+After setup, you can remove the `/api/setup` route from `server.js` for security:
 
-1. Go to admin panel
-2. Click **"Add New Car"**
-3. Fill in the details
-4. Click **"Add Car"**
-5. The car will appear on the homepage!
+```javascript
+// Comment out or delete this route after setup is complete
+// app.get('/api/setup', async (req, res) => { ... });
+```
 
-## Environment Variables Summary
+Then push again to redeploy.
 
-In Render web service dashboard → Environment:
+---
 
-| Key | Value |
-|-----|-------|
-| DATABASE_URL | `postgres://user:password@host:5432/car_rental` |
-| ADMIN_PASSWORD | `admin123` |
+## What If It Doesn't Work?
 
-## Troubleshooting
+| Error | Solution |
+|-------|----------|
+| "Database not connected" | Check `DATABASE_URL` environment variable is set in Render |
+| "relation already exists" | That's OK! Tables were already created |
+| "ECONNREFUSED" | Database is still starting, wait a few minutes |
+| Permission denied | Check username/password in DATABASE_URL |
 
-### "Connection refused"
-- Check DATABASE_URL is correct (no spaces)
-- Make sure database is "Available" (not "Creating")
+---
 
-### "Database does not exist"
-- Make sure you ran the SQL schema in PSQL console
-- The database name in URL must match what you created
+## Quick Test: Is Everything Working?
 
-### "Module not found: pg"
-- Delete node_modules and package-lock.json
-- Run `npm install` and commit
+```bash
+# Test from your browser:
+https://your-api.onrender.com/api/cars
+# Should return: {"success":true,"data":[]}
+
+https://your-api.onrender.com/api/terms
+# Should return: {"success":true,"data":[10 items]}
+```
+
+If both work, your backend is ready to add cars!
