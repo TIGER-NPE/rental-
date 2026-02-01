@@ -1,7 +1,15 @@
 # Deploy to Render.com - Step by Step
 
-## What is Render?
-Render offers **free PostgreSQL database** and **free Node.js web service**.
+## IMPORTANT: Free Tier Settings
+
+When creating PostgreSQL on Render:
+
+| Setting | Value for FREE |
+|---------|----------------|
+| **Instance type** | **Free** (select this!) |
+| **Storage** | **1 GB** (minimum, to stay free) |
+| **High Availability** | Disabled |
+| **Storage Autoscaling** | Disabled |
 
 ## Step 1: Push to GitHub
 
@@ -19,25 +27,27 @@ git push -u origin main
 1. Go to https://dashboard.render.com
 2. Click **"New"** → **"PostgreSQL"**
 3. Fill in:
-   - **Name**: `car-rental-db` (or any name you want)
-   - **Database**: `car_rental`
-   - **User**: `postgres`
-4. Click **"Create Database"**
-5. Wait for it to finish creating (status: Available)
+   - **Name**: `car_rental`
+   - **Project**: `rental` (select your project)
+   - **Region**: Oregon (US West)
+   - **PostgreSQL Version**: 18
+4. **IMPORTANT - Free Tier**:
+   - **Instance type**: Select **Free**
+   - **Storage**: Set to **1 GB** (minimum)
+5. Click **"Create Database"**
+6. Wait for it to finish creating (status: Available - green checkmark)
 
 ### WHERE TO FIND THE INTERNAL DATABASE URL:
 
 After database is created, you will see a page with:
-- **Connection** section
-- **Internal Database URL** - COPY THIS!
-- It looks like: `postgres://user:password@host:5432/car_rental`
 
-**On the left sidebar or in the Connection section, look for:**
-```
-Internal Database URL: postgres://xxxxx@yyyy:5432/car_rental
-```
-
-Click the **copy button** or select and copy the URL.
+1. **Click on the database name** in the left sidebar (e.g., "car_rental")
+2. Look for **"Connection"** section in the middle of the page
+3. You will see:
+   ```
+   Internal Database URL: postgres://user:password@host:5432/car_rental
+   ```
+4. **Click the copy button** (or highlight and copy the URL)
 
 ## Step 3: Deploy Backend on Render
 

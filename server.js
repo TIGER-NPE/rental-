@@ -1,8 +1,12 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const multer = require('multer');
-const pool = require('./config/database');
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import multer from 'multer';
+import { fileURLToPath } from 'url';
+import pool from './config/database.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
