@@ -24,7 +24,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Simple admin password (in production, use proper authentication)
+// Simple admin password
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 // Middleware
@@ -54,19 +54,17 @@ const isDbConnected = async () => {
 
 // API Routes - Public
 
-// Get all cars (with availability status)
+// Get all cars
 app.get('/api/cars', async (req, res) => {
   const connected = await isDbConnected();
   if (!connected) {
-    return res.status(200).json({ success: true, data: [], message: 'Database not connected - using sample data' });
+    return res.status(500).json({ success: false, message: 'Database not connected' });
   }
   try {
-    const { start_date } = req.query;
-    
-    // Return ALL cars (including unavailable) - frontend will handle display
-    const [rows] = await pool.query('SELECT * FROM cars ORDER BY created_at DESC');
+    const { rows } = await pool.query('SELECT * FROM cars ORDER BY created_at DESC');
     res.json({ success: true, data: rows });
-  } catch {
+  } catch (error) {
+    console.error('Fetch cars error:', error);
     res.status(500).json({ success: false, message: 'Failed to fetch cars' });
   }
 });
@@ -78,7 +76,7 @@ app.get('/api/cars/:id', async (req, res) => {
     return res.status(404).json({ success: false, message: 'Car not found' });
   }
   try {
-    const [rows] = await pool.query('SELECT * FROM cars WHERE id = ?', [req.params.id]);
+    const { rows } = await pool.query('SELECT * FROM cars WHERE id = $1', [req.params.id]);
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Car not found' });
     }
@@ -88,17 +86,17 @@ app.get('/api/cars/:id', async (req, res) => {
   }
 });
 
-// Search cars by name or model
+// Search cars
 app.get('/api/cars/search/:query', async (req, res) => {
   const connected = await isDbConnected();
   if (!connected) {
-    return res.status(200).json({ success: true, data: [], message: 'Database not connected' });
+    return res.status(500).json({ success: false, message: 'Database not connected' });
   }
   try {
     const query = `%${req.params.query}%`;
-    const [rows] = await pool.query(
-      'SELECT * FROM cars WHERE available = TRUE AND (name LIKE ? OR model LIKE ?) ORDER BY price_per_day ASC',
-      [query, query]
+    const { rows } = await pool.query(
+      'SELECT * FROM cars WHERE available = true AND (name LIKE $1 OR model LIKE $1) ORDER BY price_per_day ASC',
+      [query]
     );
     res.json({ success: true, data: rows });
   } catch {
@@ -106,14 +104,14 @@ app.get('/api/cars/search/:query', async (req, res) => {
   }
 });
 
-// Get WhatsApp URL for a car
+// Get WhatsApp URL
 app.get('/api/cars/:id/whatsapp', async (req, res) => {
   const connected = await isDbConnected();
   if (!connected) {
     return res.status(404).json({ success: false, message: 'Car not found' });
   }
   try {
-    const [rows] = await pool.query('SELECT whatsapp_number, name, model FROM cars WHERE id = ?', [req.params.id]);
+    const { rows } = await pool.query('SELECT whatsapp_number, name, model FROM cars WHERE id = $1', [req.params.id]);
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Car not found' });
     }
@@ -129,58 +127,44 @@ app.get('/api/cars/:id/whatsapp', async (req, res) => {
   }
 });
 
-// API Routes - Admin (Protected)
+// Admin Routes
 
-// Get all cars (including unavailable)
 app.get('/api/admin/cars', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    const [rows] = await pool.query('SELECT * FROM cars ORDER BY created_at DESC');
+    const { rows } = await pool.query('SELECT * FROM cars ORDER BY created_at DESC');
     res.json({ success: true, data: rows });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch cars' });
   }
 });
 
-// Add new car
 app.post('/api/admin/cars', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    const { name, model, year, price_per_day, whatsapp_number, images, description, available } = req.body;
+    const { name, model, year, price_per_day, whatsapp_number, images, description, available, start_date, end_date } = req.body;
     
     const imagesJson = images ? JSON.stringify(images) : '[]';
     
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO cars (name, model, year, price_per_day, whatsapp_number, images, description, available, start_date, end_date) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [name, model, year, price_per_day, whatsapp_number, imagesJson, description || '', available !== false, req.body.start_date || null, req.body.end_date || null]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [name, model, year, price_per_day, whatsapp_number, imagesJson, description || '', available !== false, start_date || null, end_date || null]
     );
     
-    res.json({ success: true, message: 'Car added successfully', id: result.insertId });
-  } catch {
+    res.json({ success: true, message: 'Car added successfully', id: result.rows[0].id });
+  } catch (error) {
+    console.error('Add car error:', error);
     res.status(500).json({ success: false, message: 'Failed to add car' });
   }
 });
 
-// Update car
 app.put('/api/admin/cars/:id', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
     const { name, model, year, price_per_day, whatsapp_number, images, description, available, start_date, end_date } = req.body;
     
     const imagesJson = images ? JSON.stringify(images) : '[]';
     
     await pool.query(
-      `UPDATE cars SET name = ?, model = ?, year = ?, price_per_day = ?, whatsapp_number = ?, images = ?, description = ?, available = ?, start_date = ?, end_date = ? WHERE id = ?`,
+      `UPDATE cars SET name = $1, model = $2, year = $3, price_per_day = $4, whatsapp_number = $5, images = $6, description = $7, available = $8, start_date = $9, end_date = $10 WHERE id = $11`,
       [name, model, year, price_per_day, whatsapp_number, imagesJson, description || '', available !== false, start_date || null, end_date || null, req.params.id]
     );
     
@@ -191,41 +175,29 @@ app.put('/api/admin/cars/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Delete car
 app.delete('/api/admin/cars/:id', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    await pool.query('DELETE FROM cars WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM cars WHERE id = $1', [req.params.id]);
     res.json({ success: true, message: 'Car deleted successfully' });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to delete car' });
   }
 });
 
-// Upload car photo
 app.post('/api/admin/cars/:id/photo', authenticateAdmin, upload.single('photo'), async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
-  
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
   
   try {
     const photoUrl = `/uploads/cars/${req.file.filename}`;
-    await pool.query('UPDATE cars SET image_url = ? WHERE id = ?', [photoUrl, req.params.id]);
+    await pool.query('UPDATE cars SET image_url = $1 WHERE id = $2', [photoUrl, req.params.id]);
     res.json({ success: true, photoUrl });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to save photo' });
   }
 });
 
-// Verify admin password
 app.post('/api/admin/verify', (req, res) => {
   const { password } = req.body;
   if (password === ADMIN_PASSWORD) {
@@ -235,56 +207,39 @@ app.post('/api/admin/verify', (req, res) => {
   }
 });
 
-// ============================================
-// DRIVERS API ROUTES (Admin Protected)
-// ============================================
+// Drivers Routes
 
-// Get all drivers
 app.get('/api/admin/drivers', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    const [rows] = await pool.query('SELECT * FROM drivers ORDER BY created_at DESC');
+    const { rows } = await pool.query('SELECT * FROM drivers ORDER BY created_at DESC');
     res.json({ success: true, data: rows });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch drivers' });
   }
 });
 
-// Add new driver
 app.post('/api/admin/drivers', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
     const { name, phone, email, license_number, vehicle_assigned, status } = req.body;
     
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO drivers (name, phone, email, license_number, vehicle_assigned, status) 
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [name, phone || '', email || '', license_number || '', vehicle_assigned || '', status || 'available']
     );
     
-    res.json({ success: true, message: 'Driver added successfully', id: result.insertId });
+    res.json({ success: true, message: 'Driver added successfully', id: result.rows[0].id });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to add driver' });
   }
 });
 
-// Update driver
 app.put('/api/admin/drivers/:id', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
     const { name, phone, email, license_number, vehicle_assigned, status } = req.body;
     
     await pool.query(
-      `UPDATE drivers SET name = ?, phone = ?, email = ?, license_number = ?, vehicle_assigned = ?, status = ? WHERE id = ?`,
+      `UPDATE drivers SET name = $1, phone = $2, email = $3, license_number = $4, vehicle_assigned = $5, status = $6 WHERE id = $7`,
       [name, phone || '', email || '', license_number || '', vehicle_assigned || '', status || 'available', req.params.id]
     );
     
@@ -294,117 +249,79 @@ app.put('/api/admin/drivers/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Delete driver
 app.delete('/api/admin/drivers/:id', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    await pool.query('DELETE FROM drivers WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM drivers WHERE id = $1', [req.params.id]);
     res.json({ success: true, message: 'Driver deleted successfully' });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to delete driver' });
   }
 });
 
-// Upload driver photo
 app.post('/api/admin/drivers/:id/photo', authenticateAdmin, upload.single('photo'), async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
-  
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
   }
   
   try {
     const photoUrl = `/uploads/drivers/${req.file.filename}`;
-    await pool.query('UPDATE drivers SET photo_url = ? WHERE id = ?', [photoUrl, req.params.id]);
+    await pool.query('UPDATE drivers SET photo_url = $1 WHERE id = $2', [photoUrl, req.params.id]);
     res.json({ success: true, photoUrl });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to save photo' });
   }
 });
 
-// Public route to get available drivers
 app.get('/api/drivers/available', async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(200).json({ success: true, data: [], message: 'Database not connected' });
-  }
   try {
-    const [rows] = await pool.query("SELECT * FROM drivers WHERE status = 'available' ORDER BY name");
+    const { rows } = await pool.query("SELECT * FROM drivers WHERE status = 'available' ORDER BY name");
     res.json({ success: true, data: rows });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch drivers' });
   }
 });
 
-// ============================================
-// TERMS API ROUTES (Admin Protected)
-// ============================================
+// Terms Routes
 
-// Get all terms
 app.get('/api/admin/terms', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    const [rows] = await pool.query('SELECT * FROM terms ORDER BY display_order ASC');
+    const { rows } = await pool.query('SELECT * FROM terms ORDER BY display_order ASC');
     res.json({ success: true, data: rows });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch terms' });
   }
 });
 
-// Get public terms
 app.get('/api/terms', async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(200).json({ success: true, data: [], message: 'Database not connected' });
-  }
   try {
-    const [rows] = await pool.query('SELECT * FROM terms ORDER BY display_order ASC');
+    const { rows } = await pool.query('SELECT * FROM terms ORDER BY display_order ASC');
     res.json({ success: true, data: rows });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to fetch terms' });
   }
 });
 
-// Add new term
 app.post('/api/admin/terms', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
     const { title, content, display_order } = req.body;
     
-    const [result] = await pool.query(
-      `INSERT INTO terms (title, content, display_order) VALUES (?, ?, ?)`,
+    const result = await pool.query(
+      `INSERT INTO terms (title, content, display_order) VALUES ($1, $2, $3) RETURNING id`,
       [title, content, display_order || 0]
     );
     
-    res.json({ success: true, message: 'Term added successfully', id: result.insertId });
+    res.json({ success: true, message: 'Term added successfully', id: result.rows[0].id });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to add term' });
   }
 });
 
-// Update term
 app.put('/api/admin/terms/:id', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
     const { title, content, display_order } = req.body;
     
     await pool.query(
-      `UPDATE terms SET title = ?, content = ?, display_order = ? WHERE id = ?`,
+      `UPDATE terms SET title = $1, content = $2, display_order = $3 WHERE id = $4`,
       [title, content, display_order || 0, req.params.id]
     );
     
@@ -414,25 +331,16 @@ app.put('/api/admin/terms/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
-// Delete term
 app.delete('/api/admin/terms/:id', authenticateAdmin, async (req, res) => {
-  const connected = await isDbConnected();
-  if (!connected) {
-    return res.status(503).json({ success: false, message: 'Database not connected' });
-  }
   try {
-    await pool.query('DELETE FROM terms WHERE id = ?', [req.params.id]);
+    await pool.query('DELETE FROM terms WHERE id = $1', [req.params.id]);
     res.json({ success: true, message: 'Term deleted successfully' });
   } catch {
     res.status(500).json({ success: false, message: 'Failed to delete term' });
   }
 });
 
-// ============================================
-// DATABASE SETUP ROUTE - Run once to create tables
-// Visit: https://your-api.onrender.com/api/setup
-// ============================================
-
+// Database Setup Route
 app.get('/api/setup', async (req, res) => {
   try {
     // Create cars table
@@ -509,11 +417,12 @@ app.get('/api/setup', async (req, res) => {
       message: 'Database setup complete! Tables created: cars, drivers, terms' 
     });
   } catch (error) {
+    console.error('Setup error:', error);
     res.status(500).json({ success: false, message: error.message });
   }
 });
 
-// API is ready - frontend is on Netlify
-
 // Start server
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
