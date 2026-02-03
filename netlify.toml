@@ -1,5 +1,8 @@
+[build.environment]
+  NPM_FLAGS = "--include=dev"
+
 [build]
-  command = "npm run build"
+  command = "npm ci"
   publish = "dist"
 
 [[redirects]]
