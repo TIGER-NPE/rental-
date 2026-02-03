@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   build: {
-    outDir: '../dist/admin',
+    outDir: 'dist',
     emptyOutDir: true
   },
   server: {
@@ -18,6 +18,6 @@ export default defineConfig({
     }
   },
   define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || '/api')
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://car-rental-api-pp6g.onrender.com/api')
   }
 })
