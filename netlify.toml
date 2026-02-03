@@ -2,7 +2,7 @@
   NPM_FLAGS = "--include=dev"
 
 [build]
-  command = "rm -rf node_modules && npm ci --include=dev && npx vite build"
+  command = "npm ci --include=dev && cd admin && npm ci --include=dev && npm run build && cd .. && npm run build"
   publish = "dist"
 
 [[redirects]]
@@ -11,6 +11,19 @@
   status = 200
 
 [[redirects]]
+  from = "/admin/*"
+  to = "/admin/:splat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[plugins]]
+  package = "netlify-plugin-subdir-sitemap"
+
+[[headers]]
+  for = "/admin/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
