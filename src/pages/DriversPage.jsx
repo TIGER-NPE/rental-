@@ -15,16 +15,7 @@ const formatPhotoUrl = (url) => {
   return url
 }
 
-// Default drivers for when API is unavailable
-const DEFAULT_DRIVERS = [
-  { id: 1, name: 'John Mugabo', phone: '+250788123456', email: 'john@rental.com', license_number: 'DL001234', vehicle_assigned: 'Toyota Corolla', photo_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200', status: 'available' },
-  { id: 2, name: 'Marie Mukasine', phone: '+250788654321', email: 'marie@rental.com', license_number: 'DL002345', vehicle_assigned: 'Toyota RAV4', photo_url: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200', status: 'available' },
-  { id: 3, name: 'Patrick Nzeyimana', phone: '+250788987654', email: 'patrick@rental.com', license_number: 'DL003456', vehicle_assigned: 'Honda Civic', photo_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200', status: 'busy' },
-  { id: 4, name: 'Alice Uwimana', phone: '+250788111222', email: 'alice@rental.com', license_number: 'DL004567', vehicle_assigned: 'BMW 3 Series', photo_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200', status: 'available' },
-  { id: 5, name: 'Bob Niyonkuru', phone: '+250788333444', email: 'bob@rental.com', license_number: 'DL005678', vehicle_assigned: 'Ford Ranger', photo_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200', status: 'offline' },
-  { id: 6, name: 'Claire Ingabire', phone: '+250788555666', email: 'claire@rental.com', license_number: 'DL006789', vehicle_assigned: 'Mercedes A-Class', photo_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200', status: 'available' },
-  { id: 7, name: 'David Habimana', phone: '+250788777888', email: 'david@rental.com', license_number: 'DL007890', vehicle_assigned: 'Toyota Hilux', photo_url: 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200', status: 'busy' }
-]
+
 
 function DriversPage() {
   const { t } = useLanguage()
@@ -42,16 +33,12 @@ function DriversPage() {
       const response = await fetch(`${API_BASE}/drivers/available`)
       const data = await response.json()
       if (data.success) {
-        if (data.data.length === 0) {
-          setDrivers(DEFAULT_DRIVERS)
-        } else {
-          setDrivers(data.data)
-        }
+        setDrivers(data.data)
       } else {
-        setDrivers(DEFAULT_DRIVERS)
+        setDrivers([])
       }
     } catch {
-      setDrivers(DEFAULT_DRIVERS)
+      setDrivers([])
     } finally {
       setLoading(false)
     }
