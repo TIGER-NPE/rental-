@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import './CarForm.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 // Helper to format date for input field (YYYY-MM-DD)
 const formatDateForInput = (dateStr) => {
@@ -132,8 +135,8 @@ function CarForm({ car, password, onClose, onSubmit }) {
 
     try {
       const url = car 
-        ? `${API_BASE}/admin/cars/${car.id}`
-        : `${API_BASE}/admin/cars`
+        ? `${getApiBase()}/admin/cars/${car.id}`
+        : `${getApiBase()}/admin/cars`
       const method = car ? 'PUT' : 'POST'
 
       const response = await fetch(url, {

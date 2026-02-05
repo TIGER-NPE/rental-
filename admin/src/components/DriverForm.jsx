@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import './DriverForm.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 function DriverForm({ driver, password, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -54,8 +57,8 @@ function DriverForm({ driver, password, onClose, onSubmit }) {
     try {
       // First save driver data
       const url = driver 
-        ? `${API_BASE}/admin/drivers/${driver.id}`
-        : `${API_BASE}/admin/drivers`
+        ? `${getApiBase()}/admin/drivers/${driver.id}`
+        : `${getApiBase()}/admin/drivers`
       
       const method = driver ? 'PUT' : 'POST'
       

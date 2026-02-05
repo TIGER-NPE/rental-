@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import './TermsList.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 function TermsList({ password, onEdit, refreshKey }) {
   const [terms, setTerms] = useState([])
@@ -14,7 +17,7 @@ function TermsList({ password, onEdit, refreshKey }) {
 
   const fetchTerms = async () => {
     try {
-      const response = await fetch(`${API_BASE}/admin/terms`, {
+      const response = await fetch(`${getApiBase()}/admin/terms`, {
         headers: { 'x-admin-password': password }
       })
       const data = await response.json()
@@ -34,7 +37,7 @@ function TermsList({ password, onEdit, refreshKey }) {
     if (!window.confirm('Are you sure you want to delete this policy?')) return
     
     try {
-      const response = await fetch(`${API_BASE}/admin/terms/${id}`, {
+      const response = await fetch(`${getApiBase()}/admin/terms/${id}`, {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       })

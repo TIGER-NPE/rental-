@@ -7,7 +7,10 @@ import DriverForm from './components/DriverForm'
 import TermsList from './components/TermsList'
 import TermsForm from './components/TermsForm'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -27,7 +30,7 @@ function App() {
   const handleLogin = async (e) => {
     e.preventDefault()
     try {
-      const response = await fetch(`${API_BASE}/admin/verify`, {
+      const response = await fetch(`${getApiBase()}/admin/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password })
@@ -124,7 +127,7 @@ function App() {
 
   const verifyToken = async (token) => {
     try {
-      const response = await fetch(`${API_BASE}/admin/verify`, {
+      const response = await fetch(`${getApiBase()}/admin/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: token })

@@ -4,7 +4,7 @@ import './TermsPage.css'
 import LanguageSelector from '../components/LanguageSelector'
 import { useLanguage } from '../context/LanguageContext'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3000'
 
 // FAQ Section - Most common questions
 const FAQS = [

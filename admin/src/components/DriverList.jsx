@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react'
 import './DriverList.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 // Helper to format photo URLs for local paths
 const formatPhotoUrl = (url) => {
   if (!url) return null
   if (url.startsWith('/')) {
-    return `${API_BASE.replace('/api', '')}${url}`
+    return `${getApiBase()}${url}`
   }
   return url
 }
@@ -23,7 +26,7 @@ function DriverList({ password, onEdit, refreshKey }) {
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/admin/drivers`, {
+      const response = await fetch(`${getApiBase()}/admin/drivers`, {
         headers: { 'x-admin-password': password }
       })
       const data = await response.json()
@@ -43,7 +46,7 @@ function DriverList({ password, onEdit, refreshKey }) {
     if (!window.confirm('Are you sure you want to delete this driver?')) return
     
     try {
-      const response = await fetch(`${API_BASE}/admin/drivers/${id}`, {
+      const response = await fetch(`${getApiBase()}/admin/drivers/${id}`, {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       })

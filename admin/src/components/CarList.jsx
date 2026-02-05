@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import './CarList.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 // Helper to format image URLs for local paths
 const formatImageUrl = (url) => {
@@ -42,7 +45,7 @@ function CarList({ password, onEdit, refreshKey }) {
 
   const fetchCars = async () => {
     try {
-      const response = await fetch(`${API_BASE}/admin/cars`, {
+      const response = await fetch(`${getApiBase()}/admin/cars`, {
         headers: { 'x-admin-password': password }
       })
       const data = await response.json()
@@ -66,7 +69,7 @@ function CarList({ password, onEdit, refreshKey }) {
     if (!window.confirm('Are you sure you want to delete this car?')) return
     
     try {
-      const response = await fetch(`${API_BASE}/admin/cars/${id}`, {
+      const response = await fetch(`${getApiBase()}/admin/cars/${id}`, {
         method: 'DELETE',
         headers: { 'x-admin-password': password }
       })

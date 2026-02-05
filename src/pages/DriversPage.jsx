@@ -4,13 +4,13 @@ import './DriversPage.css'
 import LanguageSelector from '../components/LanguageSelector'
 import { useLanguage } from '../context/LanguageContext'
 
-const API_BASE = '/api'
+const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3000'
 
 // Helper to format image URLs for local paths
 const formatPhotoUrl = (url) => {
   if (!url) return null
   if (url.startsWith('/')) {
-    return `http://localhost:3000${url}`
+    return `${API_BASE}${url}`
   }
   return url
 }
@@ -30,7 +30,7 @@ function DriversPage() {
 
   const fetchDrivers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/drivers/available`)
+      const response = await fetch(`${API_BASE}/api/drivers/available`)
       const data = await response.json()
       if (data.success) {
         setDrivers(data.data)

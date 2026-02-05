@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
 import './TermsForm.css'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const getApiBase = () => {
+  const apiUrl = import.meta.env.VITE_API_URL || ''
+  return apiUrl ? apiUrl : '/api'
+}
 
 function TermsForm({ term, password, onClose, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -26,8 +29,8 @@ function TermsForm({ term, password, onClose, onSubmit }) {
     
     try {
       const url = term 
-        ? `${API_BASE}/admin/terms/${term.id}`
-        : `${API_BASE}/admin/terms`
+        ? `${getApiBase()}/admin/terms/${term.id}`
+        : `${getApiBase()}/admin/terms`
       
       const method = term ? 'PUT' : 'POST'
       
