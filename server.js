@@ -272,6 +272,15 @@ app.post('/api/admin/drivers/:id/photo', authenticateAdmin, upload.single('photo
   }
 });
 
+app.get('/api/drivers', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM drivers ORDER BY name');
+    res.json({ success: true, data: rows });
+  } catch {
+    res.status(500).json({ success: false, message: 'Failed to fetch drivers' });
+  }
+});
+
 app.get('/api/drivers/available', async (req, res) => {
   try {
     const { rows } = await pool.query("SELECT * FROM drivers WHERE status = 'available' ORDER BY name");
@@ -424,7 +433,25 @@ app.get('/api/setup', async (req, res) => {
 
 // Serve frontend for all non-API routes (SPA support)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  const paths = [
+    path.join(__dirname, 'dist', 'index.html'),
+    path.join(__dirname, '..', 'dist', 'index.html'),
+    path.join(__dirname, 'public', 'index.html'),
+    path.join(__dirname, 'index.html')
+  ];
+  
+  const tryPath = (index) => {
+    if (index >= paths.length) {
+      return res.status(404).json({ success: false, message: 'Frontend not found' });
+    }
+    res.sendFile(paths[index], (err) => {
+      if (err) {
+        tryPath(index + 1);
+      }
+    });
+  };
+  
+  tryPath(0);
 });
 
 // Start server
