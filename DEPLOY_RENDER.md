@@ -1,23 +1,24 @@
-# Deploy Backend to Render.com (Free)
+# Deploy Full Stack to Render.com (Frontend + Backend)
 
 ## Architecture
 
 ```
-┌──────────────────┐          ┌──────────────────┐
-│   Netlify        │   API    │   Render         │
-│   (Frontend)     │ ───────► │   (Backend)      │
-│                  │          │                  │
-│ car-rental.netlify.app      │ car-rental-api.onrender.com
-└──────────────────┘          └────────┬─────────┘
-                                       │
-                                       ▼
-                              ┌──────────────────┐
-                              │   PostgreSQL     │
-                              │   (Free DB)      │
-                              └──────────────────┘
+┌──────────────────┐
+│   Render          │
+│   (Frontend +    │
+│    Backend)       │
+│                  │
+│ rentalacar.onrender.com
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│   PostgreSQL     │
+│   (Free DB)      │
+└──────────────────┘
 ```
 
-## Step 1: Deploy Backend to Render
+## Step 1: Deploy to Render
 
 ### 1.1 Push Code to GitHub
 
@@ -33,9 +34,9 @@ git push origin master
 2. Click **"New"** → **"Web Service"**
 3. Connect your GitHub repository
 4. Configure:
-   - **Name**: `car-rental-api`
+   - **Name**: `car-rental`
    - **Build Command**: `npm install`
-   - **Start Command**: `node server.js`
+   - **Start Command**: `npm start`
 5. Click **"Create Web Service"**
 
 ### 1.3 Add Environment Variables
@@ -44,7 +45,6 @@ git push origin master
 2. Add:
    - `DATABASE_URL` = (from your PostgreSQL database)
    - `ADMIN_PASSWORD` = `admin123`
-   - `FRONTEND_URL` = `https://your-frontend.netlify.app` (or your Netlify URL)
 
 ### 1.4 Create PostgreSQL Database
 
@@ -58,7 +58,7 @@ git push origin master
 
 ### 1.5 Set Up Database Tables
 
-Visit: `https://car-rental-api-pp6g.onrender.com/api/setup`
+Visit: `https://your-service-name.onrender.com/api/setup`
 
 Expected response:
 ```json
@@ -67,32 +67,9 @@ Expected response:
 
 ### 1.6 Verify Backend
 
-Visit: `https://car-rental-api-pp6g.onrender.com/api/cars`
+Visit: `https://your-service-name.onrender.com/api/cars`
 
 Expected: `{"success":true,"data":[]}`
-
----
-
-## Step 2: Deploy Frontend to Netlify
-
-### 2.1 Update API URL
-
-Edit [`src/pages/CarsPage.jsx`](src/pages/CarsPage.jsx):
-```javascript
-const API_BASE = 'https://car-rental-api-pp6g.onrender.com';
-```
-
-### 2.2 Build and Deploy
-
-```bash
-npm run build
-```
-
-Then:
-1. Go to https://app.netlify.com
-2. Drag `dist` folder to deploy
-
-Or connect GitHub for automatic deployments.
 
 ---
 
@@ -100,16 +77,28 @@ Or connect GitHub for automatic deployments.
 
 | Service | URL |
 |---------|-----|
-| Frontend (Netlify) | `https://your-site.netlify.app` |
-| Admin Panel | `https://your-site.netlify.app/admin.html` |
-| Backend API (Render) | `https://car-rental-api-pp6g.onrender.com/api/cars` |
-| Database Setup | `https://car-rental-api-pp6g.onrender.com/api/setup` |
+| Frontend | `https://your-service-name.onrender.com` |
+| Admin Panel | `https://your-service-name.onrender.com/admin.html` |
+| API | `https://your-service-name.onrender.com/api/cars` |
+| Database Setup | `https://your-service-name.onrender.com/api/setup` |
 
 ---
 
 ## Adding Cars
 
-1. Go to `https://your-site.netlify.app/admin.html`
+1. Go to `https://your-service-name.onrender.com/admin.html`
 2. Password: `admin123`
 3. Click **"Add New Car"**
 4. Fill in details and submit
+
+---
+
+## Troubleshooting
+
+### "Frontend not found" error
+- Make sure to use `npm start` as the start command (this builds the frontend first)
+- If you see this error, visit `/api/setup` to build the database
+
+### Page not found on refresh (e.g., /drivers)
+- This should now work. The server serves the React app for all non-API routes.
+- React Router handles the client-side routing.

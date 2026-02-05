@@ -432,17 +432,31 @@ app.get('/api/setup', async (req, res) => {
 });
 
 // Serve frontend for all non-API routes (SPA support)
-// When deployed to Render, redirect to the Netlify frontend
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://rentalacar.netlify.app';
-
 app.get('*', (req, res) => {
-  // Skip API routes
+  // Skip API routes and static files
   if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
     return res.status(404).json({ success: false, message: 'Not found' });
   }
   
-  // Redirect to frontend URL with the original path
-  res.redirect(FRONTEND_URL + req.path);
+  // Serve admin.html for /admin route
+  if (req.path === '/admin.html' || req.path === '/admin') {
+    const adminPath = path.join(__dirname, 'admin', 'dist', 'index.html');
+    return res.sendFile(adminPath, (err) => {
+      if (err) {
+        console.error('Error serving admin:', err);
+        res.status(404).json({ success: false, message: 'Admin panel not found' });
+      }
+    });
+  }
+  
+  // Serve main frontend for all other routes
+  const distPath = path.join(__dirname, 'dist', 'index.html');
+  res.sendFile(distPath, (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err);
+      res.status(404).json({ success: false, message: 'Frontend not found. Run npm run build to build the frontend.' });
+    }
+  });
 });
 
 // Start server

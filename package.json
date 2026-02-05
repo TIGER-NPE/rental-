@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node node_modules/vite/bin/vite.js build",
+    "build": "npm run build:frontend && npm run build:admin",
+    "build:frontend": "node node_modules/vite/bin/vite.js build",
+    "build:admin": "cd admin && npm install && npm run build",
     "preview": "vite preview",
     "server": "node server.js",
-    "start": "node server.js"
+    "start": "npm run build && node server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
