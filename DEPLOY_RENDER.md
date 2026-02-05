@@ -44,6 +44,7 @@ git push origin master
 2. Add:
    - `DATABASE_URL` = (from your PostgreSQL database)
    - `ADMIN_PASSWORD` = `admin123`
+   - `FRONTEND_URL` = `https://your-frontend.netlify.app` (or your Netlify URL)
 
 ### 1.4 Create PostgreSQL Database
 

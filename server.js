@@ -432,26 +432,17 @@ app.get('/api/setup', async (req, res) => {
 });
 
 // Serve frontend for all non-API routes (SPA support)
+// When deployed to Render, redirect to the Netlify frontend
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://rentalacar.netlify.app';
+
 app.get('*', (req, res) => {
-  const paths = [
-    path.join(__dirname, 'dist', 'index.html'),
-    path.join(__dirname, '..', 'dist', 'index.html'),
-    path.join(__dirname, 'public', 'index.html'),
-    path.join(__dirname, 'index.html')
-  ];
+  // Skip API routes
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return res.status(404).json({ success: false, message: 'Not found' });
+  }
   
-  const tryPath = (index) => {
-    if (index >= paths.length) {
-      return res.status(404).json({ success: false, message: 'Frontend not found' });
-    }
-    res.sendFile(paths[index], (err) => {
-      if (err) {
-        tryPath(index + 1);
-      }
-    });
-  };
-  
-  tryPath(0);
+  // Redirect to frontend URL with the original path
+  res.redirect(FRONTEND_URL + req.path);
 });
 
 // Start server
