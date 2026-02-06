@@ -11,6 +11,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Frontend URL for SPA routing redirects
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://rental-car-rental.netlify.app';
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -438,25 +441,8 @@ app.get('*', (req, res) => {
     return res.status(404).json({ success: false, message: 'Not found' });
   }
   
-  // Serve admin.html for /admin route
-  if (req.path === '/admin.html' || req.path === '/admin') {
-    const adminPath = path.join(__dirname, 'admin', 'dist', 'index.html');
-    return res.sendFile(adminPath, (err) => {
-      if (err) {
-        console.error('Error serving admin:', err);
-        res.status(404).json({ success: false, message: 'Admin panel not found' });
-      }
-    });
-  }
-  
-  // Serve main frontend for all other routes
-  const distPath = path.join(__dirname, 'dist', 'index.html');
-  res.sendFile(distPath, (err) => {
-    if (err) {
-      console.error('Error serving index.html:', err);
-      res.status(404).json({ success: false, message: 'Frontend not found. Run npm run build to build the frontend.' });
-    }
-  });
+  // Redirect to frontend URL for SPA routing
+  res.redirect(FRONTEND_URL + req.path);
 });
 
 // Start server
