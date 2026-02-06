@@ -4,7 +4,7 @@ import './TermsPage.css'
 import LanguageSelector from '../components/LanguageSelector'
 import { useLanguage } from '../context/LanguageContext'
 
-const API_BASE = 'https://car-rental-api-pp6g.onrender.com'
+const API_BASE = '/api'
 
 // FAQ Section - Most common questions
 const FAQS = [

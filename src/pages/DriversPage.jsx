@@ -4,13 +4,13 @@ import './DriversPage.css'
 import LanguageSelector from '../components/LanguageSelector'
 import { useLanguage } from '../context/LanguageContext'
 
-const API_BASE = 'https://car-rental-api-pp6g.onrender.com'
+const API_BASE = '/api'
 
 // Helper to format image URLs for local paths
 const formatPhotoUrl = (url) => {
   if (!url) return null
   if (url.startsWith('/')) {
-    return `${API_BASE}${url}`
+    return url
   }
   return url
 }
