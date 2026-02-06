@@ -30,14 +30,19 @@ function DriversPage() {
 
   const fetchDrivers = async () => {
     try {
+      console.log('Fetching drivers from:', `${API_BASE}/api/drivers/available`)
       const response = await fetch(`${API_BASE}/api/drivers/available`)
+      console.log('Response status:', response.status)
       const data = await response.json()
+      console.log('Response data:', data)
       if (data.success) {
         setDrivers(data.data)
       } else {
+        console.warn('API returned error:', data.message)
         setDrivers([])
       }
-    } catch {
+    } catch (err) {
+      console.error('Fetch drivers error:', err)
       setDrivers([])
     } finally {
       setLoading(false)
