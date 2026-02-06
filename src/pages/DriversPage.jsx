@@ -4,7 +4,7 @@ import './DriversPage.css'
 import LanguageSelector from '../components/LanguageSelector'
 import { useLanguage } from '../context/LanguageContext'
 
-const API_BASE = import.meta.env.PROD ? '' : 'http://localhost:3000'
+const API_BASE = 'https://car-rental-api-pp6g.onrender.com'
 
 // Helper to format image URLs for local paths
 const formatPhotoUrl = (url) => {
