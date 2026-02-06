@@ -9,7 +9,7 @@ import DatePicker from '../components/DatePicker'
 import LanguageSelector from '../components/LanguageSelector'
 import { useLanguage } from '../context/LanguageContext'
 
-const API_BASE = '/api'
+const API_BASE = ''
 
 function CarsPage() {
   const { t } = useLanguage()
