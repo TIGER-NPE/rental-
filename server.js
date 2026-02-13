@@ -187,6 +187,40 @@ app.delete('/api/admin/cars/:id', authenticateAdmin, async (req, res) => {
   }
 });
 
+// Get car images
+app.get('/api/admin/cars/:id/images', authenticateAdmin, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT images FROM cars WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Car not found' });
+    }
+    res.json({ success: true, data: rows[0].images || [] });
+  } catch (error) {
+    console.error('Get car images error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch car images' });
+  }
+});
+
+// Delete car image
+app.delete('/api/admin/cars/:id/images/:filename', authenticateAdmin, async (req, res) => {
+  try {
+    const { id, filename } = req.params;
+    const { rows } = await pool.query('SELECT images FROM cars WHERE id = $1', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Car not found' });
+    }
+    
+    let images = rows[0].images || [];
+    images = images.filter(img => img !== filename);
+    
+    await pool.query('UPDATE cars SET images = $1 WHERE id = $2', [JSON.stringify(images), id]);
+    res.json({ success: true, message: 'Image deleted successfully' });
+  } catch (error) {
+    console.error('Delete car image error:', error);
+    res.status(500).json({ success: false, message: 'Failed to delete car image' });
+  }
+});
+
 app.post('/api/admin/cars/:id/photo', authenticateAdmin, upload.single('photo'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ success: false, message: 'No file uploaded' });
